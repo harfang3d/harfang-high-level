@@ -1,0 +1,8 @@
+pip install sphinx
+pip install sphinx_rtd_theme
+pip install sphinx-autoapi
+
+build : "sphinx-build -b html docs/source/ docs/build/html" au sein de la racine du repository
+build alternative si sphinx build ne fonctionne pas : "python -m sphinx.cmd.build -b html docs/source/ docs/build/html"
+
+docu sphinx : https://www.sphinx-doc.org/en/master/tutorial/

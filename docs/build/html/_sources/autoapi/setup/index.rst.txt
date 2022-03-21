@@ -1,0 +1,53 @@
+:py:mod:`setup`
+===============
+
+.. py:module:: setup
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   setup.package_files
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   setup.here
+   setup.extra_files
+   setup.version_string
+   setup.long_description
+
+
+.. py:data:: here
+   
+
+   
+
+.. py:function:: package_files(directory)
+
+
+.. py:data:: extra_files
+   
+
+   
+
+.. py:data:: version_string
+   
+
+   
+
+.. py:data:: long_description
+   
+
+   
+

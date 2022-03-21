@@ -1,0 +1,9 @@
+/Harfang
+/.idea
+/.mypy_cache
+/.vscode
+/__pycache__
+/imgui.ini
+/bdist_wheel/HarfangHighLevel.egg-info
+/bdist_wheel/build
+/bdist_wheel/dist

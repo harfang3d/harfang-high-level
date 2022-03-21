@@ -1,0 +1,57 @@
+:py:mod:`HarfangHighLevel.LOD_Manager`
+======================================
+
+.. py:module:: HarfangHighLevel.LOD_Manager
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   HarfangHighLevel.LOD_Manager.LOD_node
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   HarfangHighLevel.LOD_Manager.CreateNodeWithLOD
+   HarfangHighLevel.LOD_Manager.SwitchLOD
+   HarfangHighLevel.LOD_Manager.UpdateLod
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   HarfangHighLevel.LOD_Manager.LOD_nodes
+
+
+.. py:class:: LOD_node
+
+   .. py:method:: GetNode(self) -> HarfangHighLevel.Node
+
+
+
+.. py:data:: LOD_nodes
+   :annotation: = []
+
+   
+
+.. py:function:: CreateNodeWithLOD(name: str, lod_def, make_physics_object: bool = False, physic_type=hl.RBT_Static, collision_type=hl.CT_Mesh) -> LOD_node
+
+
+.. py:function:: SwitchLOD(node: LOD_node, lod_choice)
+
+
+.. py:function:: UpdateLod(m: HarfangHighLevel.Mat4)
+
+
