@@ -1,5 +1,7 @@
 <img src="https://github.com/harfang3d/image-storage/raw/main/brand/logo_harfang3d_owl_only.png" align="right" width="200"/>
+
 # HARFANG High Level for Python
+
 Real time 3D Rapid Prototyping
 
 Harfang High Level is a set of functions designed for rapid prototyping 3D application in Python. It is based on the HARFANG 3D framework (https://www.harfang3d.com).
