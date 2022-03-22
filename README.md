@@ -15,7 +15,7 @@ Launch _compile_and_install.bat_ inside _the bdist_wheel_ folder (HarfangHighLev
 
 ## Installing the manual way :
 
-Head into the bdist_wheel directory and execute the following commands :
+Head into the _bdist_wheel_ directory and execute the following commands :
 
 * ```python setup.py bdist_wheel```
 * ```pip uninstall -y HarfangHighLevel```
