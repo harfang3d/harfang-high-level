@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/harfang3d/image-storage/main/brand/logo_harfang3d_horizontal-512px.png)
+<img src="https://github.com/harfang3d/image-storage/raw/main/brand/logo_harfang3d_owl_only.png" align="right" width="200"/>
 # HARFANG High Level for Python
 Real time 3D Rapid Prototyping
 
@@ -11,9 +11,9 @@ Harfang High Level is a set of functions designed for rapid prototyping 3D appli
 
 * Installing the manual way :
 ```Head into the bdist_wheel directory and execute the following commands :```
-```python setup.py bdist_wheel```
-```pip uninstall -y HarfangHighLevel```
-```pip install .\dist\HarfangHighLevel-3.1.1-py3-none-any.whl```
+* ```python setup.py bdist_wheel```
+* ```pip uninstall -y HarfangHighLevel```
+* ```pip install .\dist\HarfangHighLevel-3.1.1-py3-none-any.whl```
 
 # Screenshots and use cases
 * Ergo Poppy Jr Digital Twin (https://www.poppy-project.org/fr/robots/poppy-ergo-jr/)
