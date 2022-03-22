@@ -8,14 +8,18 @@ Harfang High Level is a set of functions designed for rapid prototyping 3D appli
 
 
 # Installation
-* Installing using the .bat file :
-```Launch compile_and_install.bat inside the bdist_wheel folder and HarfangHighLevel will be compiled and installed on your machine.```
 
-* Installing the manual way :
-```Head into the bdist_wheel directory and execute the following commands :```
-    * ```python setup.py bdist_wheel```
-    * ```pip uninstall -y HarfangHighLevel```
-    * ```pip install .\dist\HarfangHighLevel-3.1.1-py3-none-any.whl```
+## Installing using the .bat file :
+
+Launch _compile_and_install.bat_ inside _the bdist_wheel_ folder (HarfangHighLevel will automatically be compiled and installed on your machine).
+
+## Installing the manual way :
+
+Head into the bdist_wheel directory and execute the following commands :
+
+* ```python setup.py bdist_wheel```
+* ```pip uninstall -y HarfangHighLevel```
+* ```pip install .\dist\HarfangHighLevel-3.1.1-py3-none-any.whl```
 
 # Screenshots and use cases
 * Ergo Poppy Jr Digital Twin (https://www.poppy-project.org/fr/robots/poppy-ergo-jr/)
