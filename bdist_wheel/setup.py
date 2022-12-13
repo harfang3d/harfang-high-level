@@ -1,6 +1,6 @@
 from setuptools import setup, Distribution
 from codecs import open  # to use a consistent encoding
-import os
+import os, shutil
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -12,6 +12,11 @@ def package_files(directory):
             paths.append(os.path.join("..", path, filename))
     return paths
 
+
+if os.path.exists("HarfangHighLevel/Harfang"):
+    shutil.rmtree("HarfangHighLevel/Harfang")
+
+shutil.copytree("Harfang_x64", "HarfangHighLevel/Harfang", dirs_exist_ok=True)
 
 extra_files = package_files("HarfangHighLevel")
 
@@ -47,7 +52,7 @@ setup(
     keywords="2d 3d multimedia development engine realtime rendering design visualization simulation physics vr virtual reality python lua opengl opengles directx",
     packages=["HarfangHighLevel"],
     include_package_data=True,
-    package_data={"": extra_files},
-    python_requires=">=3.6",
-    install_requires=["harfang==3.2.0", "tqdm", "pyunpack", "patool"],
+    package_data={"HarfangHighLevel": extra_files},
+    python_requires=">=3.8",
+    install_requires=["harfang==3.2.4", "tqdm", "py7zr"],
 )

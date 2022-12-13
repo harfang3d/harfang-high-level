@@ -10,16 +10,14 @@ Welcome to HHL's documentation!
 the `Harfang 3D Library <https://www.harfang3d.com/>`_ thanks to
 it's *simple* and *intuitive* API.
 
-`Harfang High Level GitHub Source <https://github.com/harfang3d/harfang-high-level/>`_
-
 .. note::
 
    This project is under active development.
 
 .. toctree::
-   :maxdepth: 2
+   autoapi/index
+   :maxdepth: 4
    :caption: Contents:
-
 
 
 Indices and tables

@@ -19,7 +19,7 @@ Head into the _bdist_wheel_ directory and execute the following commands :
 
 * ```python setup.py bdist_wheel```
 * ```pip uninstall -y HarfangHighLevel```
-* ```pip install .\dist\HarfangHighLevel-3.1.1-py3-none-any.whl```
+* ```pip install .\dist\HarfangHighLevel-3.2.4-py3-none-any.whl```
 
 # Screenshots and use cases
 * Ergo Poppy Jr Digital Twin (https://www.poppy-project.org/fr/robots/poppy-ergo-jr/)

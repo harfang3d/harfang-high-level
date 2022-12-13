@@ -7,14 +7,15 @@ import subprocess
 import sys
 import re
 from tqdm import tqdm
-from pyunpack import Archive
 import glob
 import json
 import os
 import shutil
 import subprocess
 import pathlib
+import platform
 import operator
+from py7zr import unpack_7zarchive
 
 from harfang import *
 import harfang as hl
@@ -23,11 +24,31 @@ from HarfangHighLevel import LOD_Manager
 
 from typing import Union, Any, List, Dict
 
+if getattr(sys, "frozen", False):
+    # If the application is run as a bundle, the PyInstaller bootloader
+    # extends the sys module by a flag frozen=True and sets the app
+    # path into variable _MEIPASS'.
+    app_folder = sys._MEIPASS
+else:
+    app_folder = "."
+
 current_folder_path = pathlib.Path(__file__).parent.resolve()
 
+# check if there is an unpacker for 7z
+try:
+    shutil.register_unpack_format("7zip", [".7z"], unpack_7zarchive)
+except:
+    pass
 
-render_type = "VK"
-# render_type = "DX11"
+current_platform = platform.system()
+current_platform_architecture = platform.architecture()
+
+if current_platform == "Windows":
+    render_type = "DX11"
+elif current_platform == "Linux":
+    render_type = "GL"  # "VK"
+else:
+    raise SystemError("Unsupported platform for assetc")
 
 
 class GlobalVal:
@@ -38,6 +59,7 @@ class GlobalVal:
     res: hl.PipelineResources = None
     render_data: hl.SceneForwardPipelineRenderData = hl.SceneForwardPipelineRenderData()
     pass_views: List[hl.SceneForwardPipelinePassViewId] = []
+    view_state: hl.ViewState = None
 
     # VR
     activate_VR: bool = False
@@ -55,6 +77,7 @@ class GlobalVal:
     CacheTexturePathToUniformTargetTex: Dict[str, hl.UniformSetTexture] = {}
 
     dt: int = hl.TickClock()
+    scaleDT: float = 1
     clocks: hl.SceneClocks = hl.SceneClocks()
     scene: hl.Scene = None
     camera: hl.Node = None
@@ -77,8 +100,8 @@ class GlobalVal:
 
 
 gVal = GlobalVal()
-output_assets_path = os.path.join("Harfang", "resources")
-output_assets_compiled_path = os.path.join("Harfang", "resources_compiled")
+output_assets_path = os.path.join(app_folder, "Harfang", "resources")
+output_assets_compiled_path = os.path.join(app_folder, "Harfang", "resources_compiled")
 
 text_render_state = hl.ComputeRenderState(hl.BM_Alpha, hl.DT_Always, hl.FC_Disabled, False)
 
@@ -86,12 +109,12 @@ text_render_state = hl.ComputeRenderState(hl.BM_Alpha, hl.DT_Always, hl.FC_Disab
 def Init(width: int, height: int, activate_vr: bool = False):
     # create local harfang folder
     # and copy the resources
-    if not os.path.exists(os.path.join("Harfang", "resources")):
-        os.makedirs(os.path.join("Harfang", "resources"))
-        Archive(os.path.join(current_folder_path, "Harfang", "resources.7z")).extractall(os.path.join("Harfang", "resources"))
+    if not os.path.exists(os.path.join(app_folder, "Harfang", "resources")):
+        os.makedirs(os.path.join(app_folder, "Harfang", "resources"))
+        shutil.unpack_archive(os.path.join(current_folder_path, "Harfang", "resources.7z"), os.path.join(app_folder, "Harfang", "resources"))
 
     # launch assetc to compile
-    execute_assetc(os.path.join("Harfang", "resources"), os.path.join("Harfang", "resources_compiled"))
+    execute_assetc(os.path.join(app_folder, "Harfang", "resources"), os.path.join(app_folder, "Harfang", "resources_compiled"))
 
     # set debug build
     # hl.SetLogLevel(hl.LL_All)
@@ -102,7 +125,7 @@ def Init(width: int, height: int, activate_vr: bool = False):
     gVal.height = height
 
     # add the path to the assets compiled folder to be used internally by the engine to find the resources
-    hl.AddAssetsFolder("Harfang/resources_compiled")
+    hl.AddAssetsFolder(os.path.join(app_folder, "Harfang", "resources_compiled"))
 
     # init input/window
     hl.InputInit()
@@ -112,10 +135,15 @@ def Init(width: int, height: int, activate_vr: bool = False):
 
     # create window
     gVal.win = hl.NewWindow(gVal.width, gVal.height)
+    # gVal.win = hl.NewWindow(gVal.width, gVal.height, 32, hl.WV_Fullscreen)
     if render_type == "DX11":
         hl.RenderInit(gVal.win, hl.RT_Direct3D11)
-    if render_type == "VK":
+    elif render_type == "DX12":
+        hl.RenderInit(gVal.win, hl.RT_Direct3D12)
+    elif render_type == "VK":
         hl.RenderInit(gVal.win, hl.RT_Vulkan)
+    elif render_type == "GL":
+        hl.RenderInit(gVal.win, hl.OpenGL)
     hl.RenderReset(gVal.width, gVal.height, hl.RF_MSAA4X)
 
     # create pipeline/resource
@@ -139,7 +167,12 @@ def Init(width: int, height: int, activate_vr: bool = False):
     gVal.scene = hl.Scene()
 
     # create scene camera
-    gVal.camera = hl.CreateCamera(gVal.scene, hl.TransformationMat4(hl.Vec3(0, 1000, 0), hl.Vec3(0, 0, 0)), 0.1, 10000,)
+    gVal.camera = hl.CreateCamera(
+        gVal.scene,
+        hl.TransformationMat4(hl.Vec3(0, 1000, 0), hl.Vec3(0, 0, 0)),
+        0.1,
+        10000,
+    )
     gVal.scene.SetCurrentCamera(gVal.camera)
 
     # create physic
@@ -172,15 +205,23 @@ def Init(width: int, height: int, activate_vr: bool = False):
     gVal.shaders["color"] = hl.LoadProgramFromAssets("core/shader/color")
 
     # create default grey material
-    gVal.materials["0.5_0.5_0.5"] = hl.CreateMaterial(gVal.shaders["pbr"], "uBaseOpacityColor", hl.Vec4(0.5, 0.5, 0.5), "uOcclusionRoughnessMetalnessColor", hl.Vec4(1, 1, 1),)
+    gVal.materials["0.5_0.5_0.5"] = hl.CreateMaterial(
+        gVal.shaders["pbr"],
+        "uBaseOpacityColor",
+        hl.Vec4(0.5, 0.5, 0.5),
+        "uOcclusionRoughnessMetalnessColor",
+        hl.Vec4(1, 1, 1),
+    )
 
     # add map for pbr shader
     t, info = hl.LoadTextureFromAssets("core/pbr/probe.hdr.irradiance", 0)
-    gVal.scene.environment.irradiance_map = gVal.res.AddTexture("core/pbr/probe.hdr.irradiance", t)
+    irradiance_map = gVal.res.AddTexture("core/pbr/probe.hdr.irradiance", t)
     t, info = hl.LoadTextureFromAssets("core/pbr/probe.hdr.radiance", 0)
-    gVal.scene.environment.radiance_map = gVal.res.AddTexture("core/pbr/probe.hdr.radiance", t)
+    radiance_map = gVal.res.AddTexture("core/pbr/probe.hdr.radiance", t)
     t, info = hl.LoadTextureFromAssets("core/pbr/brdf.dds", 0)
-    gVal.scene.environment.brdf_map = gVal.res.AddTexture("core/pbr/brdf.dds", t)
+    brdf_map = gVal.res.AddTexture("core/pbr/brdf.dds", t)
+
+    gVal.scene.SetProbe(irradiance_map, radiance_map, brdf_map)
 
     # load font
     gVal.font = hl.LoadFontFromAssets(
@@ -193,16 +234,30 @@ def Init(width: int, height: int, activate_vr: bool = False):
 
     # begin frame for imgui
     hl.ImGuiBeginFrame(
-        gVal.width, gVal.height, gVal.dt, gVal.mouse.GetState(), gVal.keyboard.GetState(),
+        gVal.width,
+        gVal.height,
+        gVal.dt,
+        gVal.mouse.GetState(),
+        gVal.keyboard.GetState(),
     )
 
 
 def execute_assetc(input_path: str, output_path: str):
     # launch assetc to compile the newly added
-    cmd = f'"{current_folder_path}\\Harfang\\_bin\\assetc.exe" -api {render_type} -quiet -progress -t "{current_folder_path}\\Harfang\\_bin\\toolchains\\host-windows-x64-target-windows-x64" "{input_path}" "{output_path}"'
+    bin_path = os.path.join(current_folder_path, "Harfang", "_bin")
+
+    if current_platform == "Windows":
+        if current_platform_architecture[0] == "64bit":
+            cmd = f'{os.path.join(bin_path, "assetc.exe")} -api {render_type} -quiet -progress -t {os.path.join(bin_path, "toolchains", "host-windows-x64-target-windows-x64")} {input_path} {output_path}'
+        else:
+            cmd = f'{os.path.join(bin_path, "assetc.exe")} -api {render_type} -quiet -progress -t {os.path.join(bin_path, "toolchains", "host-windows-x86-target-windows-x86")} {input_path} {output_path}'
+    elif current_platform == "Linux":
+        cmd = f'{os.path.join(bin_path, "assetc")} -api {render_type} -quiet -progress -t {os.path.join(bin_path, "toolchains", "host-linux-x64-target-linux-x64")} {input_path} {output_path}'
+    else:
+        raise SystemError("Unsupported platform for assetc")
 
     def execute_com(command):
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        p = subprocess.Popen(command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return iter(p.stdout.readline, b"")
 
     t = tqdm(total=100)
@@ -210,9 +265,11 @@ def execute_assetc(input_path: str, output_path: str):
     for line in execute_com(cmd):
         txt = str(line)
         if "Progress" in txt:
-            percent = int(re.findall("\d*%", txt)[0].split("%")[0])
-            t.update(percent - percent_prec)
-            percent_prec = percent
+            regex_found = re.findall("\d*%", txt)
+            if len(regex_found) > 0:
+                percent = int(regex_found[0].split("%")[0])
+                t.update(percent - percent_prec)
+                percent_prec = percent
 
 
 ###############################################################################
@@ -224,12 +281,23 @@ def getColoredMaterial(color: hl.Color):
     """Creates a material using the chosen color. Returns *harfang.Material* object. Material is cached, meaning that if you create 2 material objects of the same color, modifying one of them will modify the other one as well."""
     name = f"{color.r:.2f}_{color.g:.2f}_{color.b:.2f}"
     if name not in gVal.materials:
-        gVal.materials[name] = hl.CreateMaterial(gVal.shaders["pbr"], "uBaseOpacityColor", hl.Vec4(color.r, color.g, color.b), "uOcclusionRoughnessMetalnessColor", hl.Vec4(1, 1, 1),)
+        gVal.materials[name] = hl.CreateMaterial(
+            gVal.shaders["pbr"],
+            "uBaseOpacityColor",
+            hl.Vec4(color.r, color.g, color.b),
+            "uOcclusionRoughnessMetalnessColor",
+            hl.Vec4(1, 0.5, 1),
+        )
     return gVal.materials[name]
 
 
 def AddFpsCamera(
-    x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0,
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
 ):
     """Creates a fps controller state (uses scene main camera)."""
     AddFpsCameraV(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z))
@@ -243,31 +311,95 @@ def AddFpsCameraV(p: hl.Vec3, r: hl.Vec3):
 
 def AddPointLight(x: float, y: float, z: float, color: hl.Color = hl.Color.White, shadow: bool = True) -> hl.Node:
     """Initialize a PointLight Node in the scene. Returns *harfang.Node* object."""
-    return hl.CreatePointLight(gVal.scene, hl.TranslationMat4(hl.Vec3(x, y, z)), 0, color, hl.Color.White, 0, hl.LST_Map if shadow else hl.LST_None,)
+    return hl.CreatePointLight(
+        gVal.scene,
+        hl.TranslationMat4(hl.Vec3(x, y, z)),
+        0,
+        color,
+        hl.Color.White,
+        0,
+        hl.LST_Map if shadow else hl.LST_None,
+    )
 
 
-def AddSpotLight(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: hl.Color = hl.Color.White, shadow: bool = True,) -> hl.Node:
+def AddSpotLight(
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    color: hl.Color = hl.Color.White,
+    shadow: bool = True,
+) -> hl.Node:
     """Initialize a SpotLight Node in the scene. Returns *harfang.Node* object."""
-    return hl.CreateSpotLight(gVal.scene, hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), 0, 5, 30, color, hl.Color.White, 0, hl.LST_Map if shadow else hl.LST_None,)
+    return hl.CreateSpotLight(
+        gVal.scene,
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        0,
+        5,
+        30,
+        color,
+        hl.Color.White,
+        0,
+        hl.LST_Map if shadow else hl.LST_None,
+    )
 
 
-def AddLinearLight(angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: hl.Color = hl.Color.White, shadow: bool = True,) -> hl.Node:
+def AddLinearLight(
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    color: hl.Color = hl.Color.White,
+    shadow: bool = True,
+) -> hl.Node:
     """Initialize a LinearLight Node in the scene. Returns *harfang.Node* object."""
-    return hl.CreateLinearLight(gVal.scene, hl.TransformationMat4(hl.Vec3(0, 0, 0), hl.Vec3(angle_x, angle_y, angle_z)), color, hl.Color.White, 0, hl.LST_Map if shadow else hl.LST_None,)
+    return hl.CreateLinearLight(
+        gVal.scene,
+        hl.TransformationMat4(hl.Vec3(0, 0, 0), hl.Vec3(angle_x, angle_y, angle_z)),
+        color,
+        hl.Color.White,
+        0,
+        hl.LST_Map if shadow else hl.LST_None,
+    )
 
 
 def AddBox(
-    x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1, color: hl.Color = hl.Color.White,
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    size_x: float = 1,
+    size_y: float = 1,
+    size_z: float = 1,
+    color: hl.Color = hl.Color.White,
 ) -> hl.Node:
     """Initialize a 3d box node in the scene. Returns *harfang.Node* object."""
-    return AddBoxM(hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), size_x, size_y, size_z, color,)
+    return AddBoxM(
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        size_x,
+        size_y,
+        size_z,
+        color,
+    )
 
 
-def AddBoxM(m: hl.Mat4, size_x: float = 1, size_y: float = 1, size_z: float = 1, color: hl.Color = hl.Color.White,) -> hl.Node:
+def AddBoxM(
+    m: hl.Mat4,
+    size_x: float = 1,
+    size_y: float = 1,
+    size_z: float = 1,
+    color: hl.Color = hl.Color.White,
+) -> hl.Node:
     model = hl.CreateCubeModel(gVal.vtx_layouts["PosFloatNormUInt8"], size_x, size_y, size_z)
     pos = hl.GetT(m)
     rot = hl.GetR(m)
-    model_ref = gVal.res.AddModel(f"box_{pos.x}_{pos.y}_{pos.z}_{rot.x}_{rot.y}_{rot.z}_{size_x}_{size_y}_{size_z}", model,)
+    model_ref = gVal.res.AddModel(
+        f"box_{pos.x}_{pos.y}_{pos.z}_{rot.x}_{rot.y}_{rot.z}_{size_x}_{size_y}_{size_z}",
+        model,
+    )
     return hl.CreateObject(gVal.scene, m, model_ref, [getColoredMaterial(color)])
 
 
@@ -291,7 +423,17 @@ def AddPhysicBox(
 ) -> hl.Node:
     """Initialize a 3d physic box node in the scene. Returns *harfang.Node* object."""
     return AddPhysicBoxM(
-        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), size_x, size_y, size_z, mass, friction, rolling_friction, restitution, is_kinematic, is_trigger, color,
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        size_x,
+        size_y,
+        size_z,
+        mass,
+        friction,
+        rolling_friction,
+        restitution,
+        is_kinematic,
+        is_trigger,
+        color,
     )
 
 
@@ -339,9 +481,22 @@ def AddPhysicBoxM(
     return node
 
 
-def AddSphere(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, color: hl.Color = hl.Color.White,) -> hl.Node:
+def AddSphere(
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    radius: float = 1,
+    color: hl.Color = hl.Color.White,
+) -> hl.Node:
     """Initialize a 3d sphere node in the scene. Returns *harfang.Node* object."""
-    return AddSphereM(hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), radius, color,)
+    return AddSphereM(
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        radius,
+        color,
+    )
 
 
 def AddSphereM(m: hl.Mat4, radius: float = 1, color: hl.Color = hl.Color.White) -> hl.Node:
@@ -369,11 +524,29 @@ def AddPhysicSphere(
     color: hl.Color = hl.Color.White,
 ) -> hl.Node:
     """Initialize a 3d physic sphere node in the scene. Returns *harfang.Node* object."""
-    return AddPhysicSphereM(hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), radius, mass, friction, rolling_friction, restitution, is_kinematic, is_trigger, color,)
+    return AddPhysicSphereM(
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        radius,
+        mass,
+        friction,
+        rolling_friction,
+        restitution,
+        is_kinematic,
+        is_trigger,
+        color,
+    )
 
 
 def AddPhysicSphereM(
-    m: hl.Mat4, radius: float = 1, mass: float = 0, friction=0.5, rolling_friction=0.0, restitution=0.0, is_kinematic: bool = False, is_trigger: bool = False, color: hl.Color = hl.Color.White,
+    m: hl.Mat4,
+    radius: float = 1,
+    mass: float = 0,
+    friction=0.5,
+    rolling_friction=0.0,
+    restitution=0.0,
+    is_kinematic: bool = False,
+    is_trigger: bool = False,
+    color: hl.Color = hl.Color.White,
 ) -> hl.Node:
     node = AddSphereM(m, radius, color)
 
@@ -408,10 +581,23 @@ def AddPhysicSphereM(
     return node
 
 
-def AddPlane(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, color: hl.Color = hl.Color.White,) -> hl.Node:
+def AddPlane(
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    size_x: float = 1,
+    size_y: float = 1,
+    color: hl.Color = hl.Color.White,
+) -> hl.Node:
     """Initialize a 3d plane node in the scene. Returns *harfang.Node* object."""
     AddPlaneM(
-        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), size_x, size_y, color,
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        size_x,
+        size_y,
+        color,
     )
 
 
@@ -421,28 +607,84 @@ def AddPlaneM(m: hl.Mat4, size_x: float = 1, size_y: float = 1, color: hl.Color 
     return hl.CreateObject(gVal.scene, m, model_ref, [getColoredMaterial(color)])
 
 
-def AddCylinder(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: hl.Color = hl.Color.White,) -> hl.Node:
+def AddCylinder(
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    radius: float = 1,
+    height: float = 2,
+    color: hl.Color = hl.Color.White,
+) -> hl.Node:
     """Iinitialize a 3d cylinder node in the scene. Returns *harfang.Node* object."""
     model = hl.CreateCylinderModel(gVal.vtx_layouts["PosFloatNormUInt8"], radius, height, 16)
     model_ref = gVal.res.AddModel(f"cylinder_{x}_{y}_{z}_{angle_x}_{angle_y}_{angle_z}_{radius}_{height}", model)
-    return hl.CreateObject(gVal.scene, hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), model_ref, [getColoredMaterial(color)],)
+    return hl.CreateObject(
+        gVal.scene,
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        model_ref,
+        [getColoredMaterial(color)],
+    )
 
 
-def AddCone(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: hl.Color = hl.Color.White,) -> hl.Node:
+def AddCone(
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    radius: float = 1,
+    height: float = 2,
+    color: hl.Color = hl.Color.White,
+) -> hl.Node:
     """Initialize a 3d cone node in the scene. Returns *harfang.Node* object."""
     model = hl.CreateConeModel(gVal.vtx_layouts["PosFloatNormUInt8"], radius, height, 16, 16)
     model_ref = gVal.res.AddModel(f"cone_{x}_{y}_{z}_{angle_x}_{angle_y}_{angle_z}_{radius}_{height}", model)
-    return hl.CreateObject(gVal.scene, hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), model_ref, [getColoredMaterial(color)],)
+    return hl.CreateObject(
+        gVal.scene,
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        model_ref,
+        [getColoredMaterial(color)],
+    )
 
 
-def AddCapsule(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: hl.Color = hl.Color.White,) -> hl.Node:
+def AddCapsule(
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    radius: float = 1,
+    height: float = 2,
+    color: hl.Color = hl.Color.White,
+) -> hl.Node:
     """Initialize a 3d capsule node in the scene. Returns *harfang.Node* object."""
     model = hl.CreateCapsuleModel(gVal.vtx_layouts["PosFloatNormUInt8"], radius, height, 16, 16)
     model_ref = gVal.res.AddModel(f"capsule_{x}_{y}_{z}_{angle_x}_{angle_y}_{angle_z}_{radius}_{height}", model)
-    return hl.CreateObject(gVal.scene, hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), model_ref, [getColoredMaterial(color)],)
+    return hl.CreateObject(
+        gVal.scene,
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        model_ref,
+        [getColoredMaterial(color)],
+    )
 
 
-def LoadScene(scn_path: str):
+def AddGeo(geo_path: str, x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: hl.Color = hl.Color.White) -> hl.Node:
+    geo_model = hl.LoadModelFromFile(geo_path)
+    model_ref = gVal.res.AddModel(geo_path, geo_model)
+    return hl.CreateObject(
+        gVal.scene,
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        model_ref,
+        [getColoredMaterial(color)],
+    )
+
+
+def LoadScene(scn_path: str) -> hl.Node:
     """Creates a new instance of a 3d object such as a scene or an asset. Returns *harfang.Node*, *bool* object."""
     return hl.CreateInstanceFromAssets(gVal.scene, hl.Mat4.Identity, scn_path, gVal.res, hl.GetForwardPipelineInfo())[0]
 
@@ -454,10 +696,11 @@ def LoadScene(scn_path: str):
 
 def Add3DFile(
     file_path: str,
+    m: hl.Mat4 = hl.Mat4.Identity,
     override: bool = False,
     make_physics_object: bool = False,
     physic_type=hl.RBT_Static,
-    collision_type=hl.CT_Mesh,
+    collision_type=hl.CT_Cube,
     physic_mass=0,
     friction=0.5,
     rolling_friction=0,
@@ -482,15 +725,39 @@ def Add3DFile(
 
         # import
         # choose the right importer
-        ext = os.path.splitext(file_path)
-        if ext == ".gltf" or ext == ".glb":
-            command_line = f'"{current_folder_path}\\Harfang\\_bin\\gltf_importer.exe" "{file_path}" -fix-geometry-orientation -o "{output_import_path}/" -base-resource-path "{output_assets_path}" -material-policy overwrite -geometry-policy overwrite -texture-policy overwrite -scene-policy overwrite'
-        elif ext == ".fbx":
-            command_line = f'"{current_folder_path}\\Harfang\\_bin\\fbx_importer.exe" "{file_path}" -profile pbr_physical -fix-geometry-orientation -o "{output_import_path}/" -base-resource-path "{output_assets_path}" -material-policy overwrite -geometry-policy overwrite -texture-policy overwrite -scene-policy overwrite'
-        else:
-            command_line = f'"{current_folder_path}\\Harfang\\_bin\\assimp_converter.exe" "{file_path}" -profile pbr_physical -o "{output_import_path}/" -base-resource-path "{output_assets_path}" -material-policy overwrite -geometry-policy overwrite -texture-policy overwrite -scene-policy overwrite'
+        ext = os.path.splitext(file_path)[1]
+        bin_path = os.path.join(current_folder_path, "Harfang", "_bin")
+        current_platform = platform.system()
 
-        p = subprocess.Popen(command_line)
+        if ext == ".gltf" or ext == ".glb":
+            if current_platform == "Windows":
+                exe_path = os.path.join(bin_path, "gltf_importer.exe")
+            elif current_platform == "Linux":
+                exe_path = os.path.join(bin_path, "gltf_importer")
+            else:
+                raise SystemError("Unsupported platform for gltf_importer")
+
+            command_line = f"{exe_path} {file_path} -fix-geometry-orientation -o {output_import_path}/ -base-resource-path {output_assets_path} -material-policy overwrite -geometry-policy overwrite -texture-policy overwrite -scene-policy overwrite"
+        elif ext == ".fbx":
+            if current_platform == "Windows":
+                exe_path = os.path.join(bin_path, "fbx_converter.exe")
+            elif current_platform == "Linux":
+                exe_path = os.path.join(bin_path, "fbx_converter")
+            else:
+                raise SystemError("Unsupported platform for fbx_converter")
+
+            command_line = f"{exe_path} {file_path} -profile pbr_physical -fix-geometry-orientation -o {output_import_path}/ -base-resource-path {output_assets_path} -material-policy overwrite -geometry-policy overwrite -texture-policy overwrite -scene-policy overwrite"
+        else:
+            if current_platform == "Windows":
+                exe_path = os.path.join(bin_path, "assimp_converter.exe")
+            elif current_platform == "Linux":
+                exe_path = os.path.join(bin_path, "assimp_converter")
+            else:
+                raise SystemError("Unsupported platform for assimp_converter")
+
+            command_line = f'{exe_path} {file_path} -profile pbr_physical -o {output_import_path}/ -base-resource-path "{output_assets_path} -material-policy overwrite -geometry-policy overwrite -texture-policy overwrite -scene-policy overwrite'
+
+        p = subprocess.Popen(command_line.split())
         stream_data = p.communicate()[0]
         print(stream_data)
 
@@ -501,8 +768,12 @@ def Add3DFile(
                 meta_text = '{"collision":{"input":[{"geometry":"' + rel_path + '","matrix":[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],"type":'
                 if collision_type == hl.CT_Mesh:
                     meta_text += '"triangle"'
-                elif collision_type == hl.CT_MeshConvex:
-                    meta_text += '"convex"'
+                # elif collision_type == hl.CT_MeshConvex:
+                #     meta_text += '"convex"'
+                elif collision_type == hl.CT_Sphere:
+                    meta_text += '"sphere"'
+                elif collision_type == hl.CT_Cube:
+                    meta_text += '"cube"'
 
                 meta_text += '}],"type":"tree"}}'
                 with open(file + ".physics", "w") as outfile:
@@ -527,7 +798,7 @@ def Add3DFile(
     scn_path = os.path.join(scene_folder_name, scene_file_name + ".scn")
 
     # Add it to the scene
-    n = hl.CreateInstanceFromAssets(gVal.scene, hl.Mat4.Identity, scn_path, gVal.res, hl.GetForwardPipelineInfo())[0]
+    n = hl.CreateInstanceFromAssets(gVal.scene, m, scn_path, gVal.res, hl.GetForwardPipelineInfo())[0]
 
     # init physic
     if make_physics_object:
@@ -535,10 +806,6 @@ def Add3DFile(
             if node.HasObject() and not node.HasRigidBody():
                 # test if node have .collision_bin file
                 path = gVal.res.GetModelName(node.GetObject().GetModelRef())
-                collision_mesh_path = path + ".physics_bullet"
-                if not os.path.exists(os.path.join(output_assets_compiled_path, collision_mesh_path)):
-                    print("Can't created collision mesh for node {}".format(node.GetName()))
-                    continue
 
                 # create collision mesh
                 mesh_col = gVal.scene.CreateCollision()
@@ -552,11 +819,27 @@ def Add3DFile(
                             json_type = json_physic["collision"]["input"][0]
                             if "type" in json_type:
                                 if json_type["type"] == "convex":
+                                    collision_mesh_path = path + ".physics_bullet"
+                                    if not os.path.exists(os.path.join(output_assets_compiled_path, collision_mesh_path)):
+                                        print("Can't created collision mesh for node {}".format(node.GetName()))
+                                        continue
                                     mesh_col.SetType(hl.CT_MeshConvex)
+                                    mesh_col.SetCollisionResource(collision_mesh_path)
                                 elif json_type["type"] == "triangle":
+                                    collision_mesh_path = path + ".physics_bullet"
+                                    if not os.path.exists(os.path.join(output_assets_compiled_path, collision_mesh_path)):
+                                        print("Can't created collision mesh for node {}".format(node.GetName()))
+                                        continue
                                     mesh_col.SetType(hl.CT_Mesh)
+                                    mesh_col.SetCollisionResource(collision_mesh_path)
+                                elif json_type["type"] == "cube":
+                                    mesh_col.SetType(hl.CT_Cube)
+                                    has_minmax, min_max = node.GetObject().GetMinMax(gVal.res)
+                                    if has_minmax:
+                                        mesh_col.SetSize(min_max.mx - min_max.mn)
+                                elif json_type["type"] == "sphere":
+                                    mesh_col.SetType(hl.CT_Sphere)
 
-                mesh_col.SetCollisionResource(collision_mesh_path)
                 mesh_col.SetMass(physic_mass)
 
                 node.SetCollision(0, mesh_col)
@@ -617,7 +900,13 @@ def Flush3D():
             # set the uniforms and call the render
             if texture_path is not None:
                 hl.DrawTriangles(
-                    view_id, quad_idx, quad_vtx, gVal.shaders["tex0"], [], [gVal.CacheTexturePathToUniformTargetTex[texture_path]], hl.ComputeRenderState(hl.BM_Alpha),
+                    view_id,
+                    quad_idx,
+                    quad_vtx,
+                    gVal.shaders["tex0"],
+                    [],
+                    [gVal.CacheTexturePathToUniformTargetTex[texture_path]],
+                    hl.ComputeRenderState(hl.BM_Alpha),
                 )
             else:
                 hl.DrawTriangles(
@@ -625,19 +914,45 @@ def Flush3D():
                     quad_idx,
                     quad_vtx,
                     gVal.shaders["color"],
-                    [hl.MakeUniformSetValue("u_simplecolor", hl.Vec4(quad["color_a"].r, quad["color_a"].g, quad["color_a"].b, quad["color_a"].a,),)],
+                    [
+                        hl.MakeUniformSetValue(
+                            "u_simplecolor",
+                            hl.Vec4(
+                                quad["color_a"].r,
+                                quad["color_a"].g,
+                                quad["color_a"].b,
+                                quad["color_a"].a,
+                            ),
+                        )
+                    ],
                     [],
                     hl.ComputeRenderState(hl.BM_Opaque),
                 )
 
         for t in gVal.texts_3D:
             hl.DrawText(
-                view_id_Transparent, t["font"], t["t"], gVal.shaders["font"], "u_tex", 0, t["m"], hl.Vec3(0, 0, 0), hl.DTHA_Left, hl.DTVA_Top, [t["c"]], [], text_render_state,
+                view_id_Transparent,
+                t["font"],
+                t["t"],
+                gVal.shaders["font"],
+                "u_tex",
+                0,
+                t["m"],
+                hl.Vec3(0, 0, 0),
+                hl.DTHA_Left,
+                hl.DTVA_Top,
+                [t["c"]],
+                [],
+                text_render_state,
             )
 
     if gVal.debug_physics:
         gVal.physics.RenderCollision(
-            view_id, gVal.vtx_layouts["PosFloatColorUInt8"], gVal.shaders["pos_rgb"], hl.ComputeRenderState(hl.BM_Opaque, hl.DT_Always, hl.FC_Disabled), 0,
+            view_id,
+            gVal.vtx_layouts["PosFloatColorUInt8"],
+            gVal.shaders["pos_rgb"],
+            hl.ComputeRenderState(hl.BM_Opaque, hl.DT_Always, hl.FC_Disabled),
+            0,
         )
 
     # clear everyone
@@ -673,7 +988,11 @@ def Flush2D(view_id):
         hl.SetViewClear(view_id, hl.CF_Depth, 0, 1.0, 0)
 
         vs = hl.ComputeOrthographicViewState(
-            hl.TranslationMat4(hl.Vec3(framebuffer_size.x / 2, framebuffer_size.y / 2, 0)), framebuffer_size.y, 0.1, 100, hl.Vec2(framebuffer_size.x / framebuffer_size.y, 1),
+            hl.TranslationMat4(hl.Vec3(framebuffer_size.x / 2, framebuffer_size.y / 2, 0)),
+            framebuffer_size.y,
+            0.1,
+            100,
+            hl.Vec2(framebuffer_size.x / framebuffer_size.y, 1),
         )
         hl.SetViewTransform(view_id, vs.view, vs.proj)
 
@@ -682,7 +1001,19 @@ def Flush2D(view_id):
         for object in sorted_objects:
             if object["object_type"] == "text":
                 hl.DrawText(
-                    view_id, object["font"], object["t"], gVal.shaders["font"], "u_tex", 0, object["m"], hl.Vec3(0, 0, 0), hl.DTHA_Left, hl.DTVA_Top, [object["c"]], [], text_render_state,
+                    view_id,
+                    object["font"],
+                    object["t"],
+                    gVal.shaders["font"],
+                    "u_tex",
+                    0,
+                    object["m"],
+                    hl.Vec3(0, 0, 0),
+                    hl.DTHA_Left,
+                    hl.DTVA_Top,
+                    [object["c"]],
+                    [],
+                    text_render_state,
                 )
 
             elif object["object_type"] == "quad":
@@ -703,7 +1034,11 @@ def Flush2D(view_id):
                     uniform_target_tex = hl.MakeUniformSetTexture("s_tex", target_tex, 0)
                     gVal.CacheTexturePathToUniformTargetTex[texture_path] = uniform_target_tex
 
-                mat = hl.TransformationMat4(hl.Vec3(pos_in_pixel.x, pos_in_pixel.y, depth), hl.Vec3(0, 0, 0), hl.Vec3(1, 1, 1),)
+                mat = hl.TransformationMat4(
+                    hl.Vec3(pos_in_pixel.x, pos_in_pixel.y, depth),
+                    hl.Vec3(0, 0, 0),
+                    hl.Vec3(1, 1, 1),
+                )
 
                 pos = hl.GetT(mat)
                 axis_x = hl.GetX(mat) * width / 2
@@ -719,11 +1054,28 @@ def Flush2D(view_id):
                 # set the uniforms and call the render
                 if texture_path is not None:
                     hl.DrawTriangles(
-                        view_id, quad_idx, quad_vtx, gVal.shaders["tex0"], [], [gVal.CacheTexturePathToUniformTargetTex[texture_path]], render_state,
+                        view_id,
+                        quad_idx,
+                        quad_vtx,
+                        gVal.shaders["tex0"],
+                        [],
+                        [gVal.CacheTexturePathToUniformTargetTex[texture_path]],
+                        render_state,
                     )
                 else:
                     hl.DrawTriangles(
-                        view_id, quad_idx, quad_vtx, gVal.shaders["color"], [hl.MakeUniformSetValue("u_simplecolor", hl.Vec4(color.r, color.g, color.b, color.a),)], [], render_state,
+                        view_id,
+                        quad_idx,
+                        quad_vtx,
+                        gVal.shaders["color"],
+                        [
+                            hl.MakeUniformSetValue(
+                                "u_simplecolor",
+                                hl.Vec4(color.r, color.g, color.b, color.a),
+                            )
+                        ],
+                        [],
+                        render_state,
                     )
 
         hl.Touch(view_id)
@@ -758,19 +1110,21 @@ def UpdateDraw():
 
     # update scene
     hl.SceneUpdateSystems(
-        gVal.scene, gVal.clocks, gVal.dt, gVal.physics, hl.time_from_sec_f(1.0 / 60.0), 4,
+        gVal.scene,
+        gVal.clocks,
+        hl.time_from_sec_f(hl.time_to_sec_f(gVal.dt) * gVal.scaleDT),
+        gVal.physics,
+        hl.time_from_sec_f(1.0 / 60.0),
+        4,
     )
 
     # draw scene
     gVal.pass_views.clear()
-    view_state = gVal.scene.ComputeCurrentCameraViewState(hl.ComputeAspectRatioX(gVal.width, gVal.height))
+    gVal.view_state = gVal.scene.ComputeCurrentCameraViewState(hl.ComputeAspectRatioX(gVal.width, gVal.height))
 
     pass_view = hl.SceneForwardPipelinePassViewId()
 
     view_id, pass_view = hl.PrepareSceneForwardPipelineCommonRenderData(view_id, gVal.scene, gVal.render_data, gVal.pipeline, gVal.res, pass_view)
-    view_id, pass_view = hl.PrepareSceneForwardPipelineViewDependentRenderData(view_id, view_state, gVal.scene, gVal.render_data, gVal.pipeline, gVal.res, pass_view,)
-    view_id, pass_view = hl.SubmitSceneToForwardPipeline(view_id, gVal.scene, hl.IntRect(0, 0, gVal.width, gVal.height), view_state, gVal.pipeline, gVal.render_data, gVal.res,)
-    gVal.pass_views.append(pass_view)
 
     # VR
     if gVal.activate_VR:
@@ -779,14 +1133,68 @@ def UpdateDraw():
         vr_eye_rect = hl.IntRect(0, 0, gVal.vr_state.width, gVal.vr_state.height)
 
         # Prepare the left eye render data then draw to its framebuffer
-        view_id, pass_view = hl.PrepareSceneForwardPipelineViewDependentRenderData(view_id, left, gVal.scene, gVal.render_data, gVal.pipeline, gVal.res, pass_view,)
-        view_id, pass_view = hl.SubmitSceneToForwardPipeline(view_id, gVal.scene, vr_eye_rect, left, gVal.pipeline, gVal.render_data, gVal.res, gVal.vr_left_fb.GetHandle(),)
+        view_id, pass_view = hl.PrepareSceneForwardPipelineViewDependentRenderData(
+            view_id,
+            left,
+            gVal.scene,
+            gVal.render_data,
+            gVal.pipeline,
+            gVal.res,
+            pass_view,
+        )
+        view_id, pass_view = hl.SubmitSceneToForwardPipeline(
+            view_id,
+            gVal.scene,
+            vr_eye_rect,
+            left,
+            gVal.pipeline,
+            gVal.render_data,
+            gVal.res,
+            gVal.vr_left_fb.GetHandle(),
+        )
         gVal.pass_views.append(pass_view)
 
         # Prepare the right eye render data then draw to its framebuffer
-        view_id, pass_view = hl.PrepareSceneForwardPipelineViewDependentRenderData(view_id, right, gVal.scene, gVal.render_data, gVal.pipeline, gVal.res, pass_view,)
-        view_id, pass_view = hl.SubmitSceneToForwardPipeline(view_id, gVal.scene, vr_eye_rect, right, gVal.pipeline, gVal.render_data, gVal.res, gVal.vr_right_fb.GetHandle(),)
+        view_id, pass_view = hl.PrepareSceneForwardPipelineViewDependentRenderData(
+            view_id,
+            right,
+            gVal.scene,
+            gVal.render_data,
+            gVal.pipeline,
+            gVal.res,
+            pass_view,
+        )
+        view_id, pass_view = hl.SubmitSceneToForwardPipeline(
+            view_id,
+            gVal.scene,
+            vr_eye_rect,
+            right,
+            gVal.pipeline,
+            gVal.render_data,
+            gVal.res,
+            gVal.vr_right_fb.GetHandle(),
+        )
         gVal.pass_views.append(pass_view)
+
+    view_id, pass_view = hl.PrepareSceneForwardPipelineViewDependentRenderData(
+        view_id,
+        gVal.view_state,
+        gVal.scene,
+        gVal.render_data,
+        gVal.pipeline,
+        gVal.res,
+        pass_view,
+    )
+    view_id, pass_view = hl.SubmitSceneToForwardPipeline(
+        view_id,
+        gVal.scene,
+        hl.IntRect(0, 0, gVal.width, gVal.height),
+        gVal.view_state,
+        gVal.pipeline,
+        gVal.render_data,
+        gVal.res,
+    )
+    gVal.pass_views.append(pass_view)
 
     # flush 3D model
     Flush3D()
@@ -805,7 +1213,11 @@ def UpdateDraw():
     hl.UpdateWindow(gVal.win)
 
     hl.ImGuiBeginFrame(
-        gVal.width, gVal.height, gVal.dt, gVal.mouse.GetState(), gVal.keyboard.GetState(),
+        gVal.width,
+        gVal.height,
+        gVal.dt,
+        gVal.mouse.GetState(),
+        gVal.keyboard.GetState(),
     )
 
     return hl.ReadKeyboard().Key(hl.K_Escape) or not hl.IsWindowOpen(gVal.win)
@@ -817,36 +1229,81 @@ def UpdateDraw():
 
 
 def DrawBox(
-    x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1,
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    size_x: float = 1,
+    size_y: float = 1,
+    size_z: float = 1,
 ):
     """Draws a 3d box. Info : every Draw function is immediate and will not return any node object."""
     DrawBoxM(
-        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)), hl.Vec3(size_x, size_y, size_z),
+        hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)),
+        hl.Vec3(size_x, size_y, size_z),
     )
 
 
 def DrawBoxM(m: hl.Mat4, size: hl.Vec3 = hl.Vec3(1, 1, 1)):
     hl.SetScale(m, size)
     gVal.models_3D.append(
-        {"mdl": gVal.models["box"], "shader": gVal.shaders["mdl_no_pipeline"], "mat4": m,}
+        {
+            "mdl": gVal.models["box"],
+            "shader": gVal.shaders["mdl_no_pipeline"],
+            "mat4": m,
+        }
     )
 
 
 def DrawPlane(
-    x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_z: float = 1,
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    size_x: float = 1,
+    size_z: float = 1,
 ):
     """Draws a 3d plane."""
     gVal.models_3D.append(
-        {"mdl": gVal.models["plane"], "shader": gVal.shaders["mdl_no_pipeline"], "mat4": hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z), hl.Vec3(size_x, 1, size_z),),}
+        {
+            "mdl": gVal.models["plane"],
+            "shader": gVal.shaders["mdl_no_pipeline"],
+            "mat4": hl.TransformationMat4(
+                hl.Vec3(x, y, z),
+                hl.Vec3(angle_x, angle_y, angle_z),
+                hl.Vec3(size_x, 1, size_z),
+            ),
+        }
     )
 
 
 def DrawGeo(
-    geo, x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1,
+    geo: hl.Model,
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
+    size_x: float = 1,
+    size_y: float = 1,
+    size_z: float = 1,
 ):
     """Draws a 3d geometry."""
     gVal.models_3D.append(
-        {"mdl": geo, "shader": gVal.shaders["mdl_no_pipeline"], "mat4": hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z), hl.Vec3(size_x, size_y, size_z),),}
+        {
+            "mdl": geo,
+            "shader": gVal.shaders["mdl_no_pipeline"],
+            "mat4": hl.TransformationMat4(
+                hl.Vec3(x, y, z),
+                hl.Vec3(angle_x, angle_y, angle_z),
+                hl.Vec3(size_x, size_y, size_z),
+            ),
+        }
     )
 
 
@@ -876,7 +1333,19 @@ def DrawQuad3D(
     """Draws a 3d quad."""
 
     DrawQuad3DV(
-        hl.Vec3(a_x, a_y, a_z), hl.Vec3(b_x, b_y, b_z), hl.Vec3(c_x, c_y, c_z), hl.Vec3(d_x, d_y, d_z), uv_a, uv_b, uv_c, uv_d, tex_path, color_a, color_b, color_c, color_d,
+        hl.Vec3(a_x, a_y, a_z),
+        hl.Vec3(b_x, b_y, b_z),
+        hl.Vec3(c_x, c_y, c_z),
+        hl.Vec3(d_x, d_y, d_z),
+        uv_a,
+        uv_b,
+        uv_c,
+        uv_d,
+        tex_path,
+        color_a,
+        color_b,
+        color_c,
+        color_d,
     )
 
 
@@ -896,7 +1365,21 @@ def DrawQuad3DV(
     color_d: hl.Color = hl.Color.White,
 ):
     gVal.quads_3D.append(
-        {"a": a, "b": b, "c": c, "d": d, "uv_a": uv_a, "uv_b": uv_b, "uv_c": uv_c, "uv_d": uv_d, "tex_path": tex_path, "color_a": color_a, "color_b": color_b, "color_c": color_c, "color_d": color_d,}
+        {
+            "a": a,
+            "b": b,
+            "c": c,
+            "d": d,
+            "uv_a": uv_a,
+            "uv_b": uv_b,
+            "uv_c": uv_c,
+            "uv_d": uv_d,
+            "tex_path": tex_path,
+            "color_a": color_a,
+            "color_b": color_b,
+            "color_c": color_c,
+            "color_d": color_d,
+        }
     )
 
 
@@ -928,14 +1411,29 @@ def DrawQuad2D(
 
 
 def DrawText2D(
-    text: str, pos_in_pixel_x: float, pos_in_pixel_y: float, size: float = 1.0, color: hl.Color = hl.Color.Green, text_centered: bool = False, font_: hl.Font = None, depth: float = 1,
+    text: str,
+    pos_in_pixel_x: float,
+    pos_in_pixel_y: float,
+    size: float = 1.0,
+    color: hl.Color = hl.Color.Green,
+    text_centered: bool = False,
+    font_: hl.Font = None,
+    depth: float = 1,
 ):
     """Draws 2d text on screen (requires loading a font)."""
-    mat = hl.TransformationMat4(hl.Vec3(pos_in_pixel_x, pos_in_pixel_y, depth), hl.Vec3(0, 0, 0), hl.Vec3(1, 1, 1) * (size * gVal.height / 64),)
+    mat = hl.TransformationMat4(
+        hl.Vec3(pos_in_pixel_x, pos_in_pixel_y, depth),
+        hl.Vec3(0, 0, 0),
+        hl.Vec3(1, 1, 1) * (size * gVal.height / 64),
+    )
     if text_centered:
         text_rect = hl.ComputeTextRect(gVal.font, text)
         mat = hl.TransformationMat4(
-            hl.Vec3(pos_in_pixel_x - (text_rect.ex - text_rect.sx) * 0.5 * size, pos_in_pixel_y - (text_rect.ey - text_rect.sy) * 0.5 * size, 1,),
+            hl.Vec3(
+                pos_in_pixel_x - (text_rect.ex - text_rect.sx) * 0.5 * size,
+                pos_in_pixel_y - (text_rect.ey - text_rect.sy) * 0.5 * size,
+                1,
+            ),
             hl.Vec3(0, 0, 0),
             hl.Vec3(1, 1, 1) * (size * gVal.height / 64),
         )
@@ -964,7 +1462,14 @@ def DrawText(
 
 
 def DrawTextM(
-    text: str, mat: hl.Mat4, size: float = 0.01, color: hl.Color = hl.Color.Green, text_centered: bool = False, font_: hl.Font = None, is_2d: bool = False, depth: float = 1,
+    text: str,
+    mat: hl.Mat4,
+    size: float = 0.01,
+    color: hl.Color = hl.Color.Green,
+    text_centered: bool = False,
+    font_: hl.Font = None,
+    is_2d: bool = False,
+    depth: float = 1,
 ):
     t = {
         "font": gVal.font,
@@ -979,7 +1484,14 @@ def DrawTextM(
 
     if text_centered:
         text_rect = hl.ComputeTextRect(t["font"], text)
-        mat = mat * hl.TranslationMat4(hl.Vec3(-(text_rect.ex - text_rect.sx) * 0.5, (text_rect.ey - text_rect.sy) * 0.5, 0,) * size)
+        mat = mat * hl.TranslationMat4(
+            hl.Vec3(
+                -(text_rect.ex - text_rect.sx) * 0.5,
+                (text_rect.ey - text_rect.sy) * 0.5,
+                0,
+            )
+            * size
+        )
 
     hl.SetS(mat, hl.Vec3(size, -size, size))
 
@@ -991,14 +1503,24 @@ def DrawTextM(
 
 
 def DrawLine(
-    a_x: float, a_y: float, a_z: float, b_x: float, b_y: float, b_z: float, color: hl.Color = hl.Color.White, color2: hl.Color = hl.Color.White,
+    a_x: float,
+    a_y: float,
+    a_z: float,
+    b_x: float,
+    b_y: float,
+    b_z: float,
+    color: hl.Color = hl.Color.White,
+    color2: hl.Color = hl.Color.White,
 ):
     """Draws a 3d line."""
     DrawLineV(hl.Vec3(a_x, a_y, a_z), hl.Vec3(b_x, b_y, b_z), color, color2)
 
 
 def DrawLineV(
-    a: hl.Vec3, b: hl.Vec3, color: hl.Color = hl.Color.White, color2: hl.Color = hl.Color.White,
+    a: hl.Vec3,
+    b: hl.Vec3,
+    color: hl.Color = hl.Color.White,
+    color2: hl.Color = hl.Color.White,
 ):
     if len(gVal.lines_3D) <= 0 or len(gVal.lines_3D[len(gVal.lines_3D) - 1]["v"]) > 64000:
         gVal.lines_3D.append({"v": [], "c": []})
@@ -1024,25 +1546,44 @@ def DrawLineList(points, colors):
 
 
 def DrawCross(
-    x: float, y: float, z: float, color: hl.Color = hl.Color.White, size: float = 0.5, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0,
+    x: float,
+    y: float,
+    z: float,
+    color: hl.Color = hl.Color.White,
+    size: float = 0.5,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
 ):
     """Draws a 3d Cross."""
     DrawCrossV(hl.Vec3(x, y, z), color, size, hl.Vec3(angle_x, angle_y, angle_z))
 
 
 def DrawCrossV(
-    pos: hl.Vec3, color: hl.Color = hl.Color.White, size: float = 0.5, rot: hl.Vec3 = hl.Vec3(0, 0, 0),
+    pos: hl.Vec3,
+    color: hl.Color = hl.Color.White,
+    size: float = 0.5,
+    rot: hl.Vec3 = hl.Vec3(0, 0, 0),
 ):
     rot_m = hl.RotationMat3(rot.x, rot.y, rot.z)
 
     DrawLineV(
-        hl.Vec3(pos.x - size, pos.y, pos.z), hl.Vec3(pos.x + size, pos.y, pos.z), color, color,
+        hl.Vec3(pos.x - size, pos.y, pos.z),
+        hl.Vec3(pos.x + size, pos.y, pos.z),
+        color,
+        color,
     )
     DrawLineV(
-        hl.Vec3(pos.x, pos.y - size, pos.z), hl.Vec3(pos.x, pos.y + size, pos.z), color, color,
+        hl.Vec3(pos.x, pos.y - size, pos.z),
+        hl.Vec3(pos.x, pos.y + size, pos.z),
+        color,
+        color,
     )
     DrawLineV(
-        hl.Vec3(pos.x, pos.y, pos.z - size), hl.Vec3(pos.x, pos.y, pos.z + size), color, color,
+        hl.Vec3(pos.x, pos.y, pos.z - size),
+        hl.Vec3(pos.x, pos.y, pos.z + size),
+        color,
+        color,
     )
 
 
@@ -1091,7 +1632,13 @@ def __update_physic_mat__(node: hl.Node):
 
 
 def ResetWorldAndForce(
-    node: hl.Node, x: float = 0, y: float = 0, z: float = 0, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0,
+    node: hl.Node,
+    x: float = 0,
+    y: float = 0,
+    z: float = 0,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
 ):
     ResetWorldAndForceM(node, hl.TransformationMat4(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z)))
 
@@ -1212,21 +1759,53 @@ def SetMat4(node: hl.Node, m: hl.Mat4):
     __update_physic_mat__(node)
 
 
-def SetDiffuseTexture(node: hl.Node, texture_path: str):
-    """Set the diffuse texture of a node."""
+def __import_texture__(texture_path):
     if not os.path.exists(os.path.join(output_assets_path, os.path.basename(texture_path))):
         # copy texture to internal resources, then assetc
         os.makedirs(os.path.join(output_assets_path, os.path.basename(texture_path)))
         shutil.copy(
-            texture_path, os.path.join(output_assets_path, os.path.basename(texture_path)),
+            texture_path,
+            os.path.join(output_assets_path, os.path.basename(texture_path)),
         )
 
         # launch assetc to compile the newly added
         execute_assetc(output_assets_path, output_assets_compiled_path)
 
+
+def SetDiffuseTexture(node: hl.Node, texture_path: str):
+    """Set the diffuse texture of a node."""
+    __import_texture__(texture_path)
+
     mat = node.GetObject().GetMaterial(0)
     texture_ref = hl.LoadTextureFromAssets(os.path.basename(texture_path), 0, gVal.res)
     hl.SetMaterialTexture(mat, "uBaseOpacityMap", texture_ref, 0)
+
+
+def SetORMTexture(node: hl.Node, texture_path: str):
+    """Set the ORM texture of a node."""
+    __import_texture__(texture_path)
+
+    mat = node.GetObject().GetMaterial(0)
+    texture_ref = hl.LoadTextureFromAssets(os.path.basename(texture_path), 0, gVal.res)
+    hl.SetMaterialTexture(mat, "uOcclusionRoughnessMetalnessMap", texture_ref, 1)
+
+
+def SetNormalTexture(node: hl.Node, texture_path: str):
+    """Set the Normal texture of a node."""
+    __import_texture__(texture_path)
+
+    mat = node.GetObject().GetMaterial(0)
+    texture_ref = hl.LoadTextureFromAssets(os.path.basename(texture_path), 0, gVal.res)
+    hl.SetMaterialTexture(mat, "uNormalMap", texture_ref, 2)
+
+
+def SetSelfTexture(node: hl.Node, texture_path: str):
+    """Set the Self texture of a node."""
+    __import_texture__(texture_path)
+
+    mat = node.GetObject().GetMaterial(0)
+    texture_ref = hl.LoadTextureFromAssets(os.path.basename(texture_path), 0, gVal.res)
+    hl.SetMaterialTexture(mat, "uSelfMap", texture_ref, 4)
 
 
 def KeyPressed(key: int):
@@ -1271,7 +1850,12 @@ def SetParent(node: hl.Node, parentNode: hl.Node):
 
 
 def SetVRGroundAnchor(
-    x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0,
+    x: float,
+    y: float,
+    z: float,
+    angle_x: float = 0,
+    angle_y: float = 0,
+    angle_z: float = 0,
 ):
     """Sets the VR Ground Anchor."""
     SetVRGroundAnchorV(hl.Vec3(x, y, z), hl.Vec3(angle_x, angle_y, angle_z))
@@ -1324,9 +1908,15 @@ def PlaySound(file_path: str, repeat: bool = False, volume: float = 1, mat: hl.M
             snd_ref = hl.LoadOGGSoundAsset(file_path)
 
         if mat is not None:
-            return hl.PlaySpatialized(snd_ref, hl.SpatializedSourceState(mat, volume, hl.SR_Loop if repeat else hl.SR_Once),)
+            return hl.PlaySpatialized(
+                snd_ref,
+                hl.SpatializedSourceState(mat, volume, hl.SR_Loop if repeat else hl.SR_Once),
+            )
         else:
-            return hl.PlayStereo(snd_ref, hl.StereoSourceState(volume, hl.SR_Loop if repeat else hl.SR_Once),)
+            return hl.PlayStereo(
+                snd_ref,
+                hl.StereoSourceState(volume, hl.SR_Loop if repeat else hl.SR_Once),
+            )
 
     print(f"ERROR SOUND: Can't handle extension {ext} from {file_path}")
     return None

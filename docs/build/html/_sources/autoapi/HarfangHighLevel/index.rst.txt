@@ -30,75 +30,76 @@ Functions
 
 .. autoapisummary::
 
-   HarfangHighLevel.Init
-   HarfangHighLevel.execute_assetc
-   HarfangHighLevel.getColoredMaterial
-   HarfangHighLevel.AddFpsCamera
-   HarfangHighLevel.AddFpsCameraV
-   HarfangHighLevel.AddPointLight
-   HarfangHighLevel.AddSpotLight
-   HarfangHighLevel.AddLinearLight
+   HarfangHighLevel.Add3DFile
    HarfangHighLevel.AddBox
    HarfangHighLevel.AddBoxM
+   HarfangHighLevel.AddCapsule
+   HarfangHighLevel.AddCone
+   HarfangHighLevel.AddCylinder
+   HarfangHighLevel.AddFpsCamera
+   HarfangHighLevel.AddFpsCameraV
+   HarfangHighLevel.AddGeo
+   HarfangHighLevel.AddLinearLight
    HarfangHighLevel.AddPhysicBox
    HarfangHighLevel.AddPhysicBoxM
-   HarfangHighLevel.AddSphere
-   HarfangHighLevel.AddSphereM
    HarfangHighLevel.AddPhysicSphere
    HarfangHighLevel.AddPhysicSphereM
    HarfangHighLevel.AddPlane
    HarfangHighLevel.AddPlaneM
-   HarfangHighLevel.AddCylinder
-   HarfangHighLevel.AddCone
-   HarfangHighLevel.AddCapsule
-   HarfangHighLevel.LoadScene
-   HarfangHighLevel.Add3DFile
-   HarfangHighLevel.Flush3D
-   HarfangHighLevel.Flush2D
-   HarfangHighLevel.UpdateDraw
+   HarfangHighLevel.AddPointLight
+   HarfangHighLevel.AddSphere
+   HarfangHighLevel.AddSphereM
+   HarfangHighLevel.AddSpotLight
+   HarfangHighLevel.DestroyNode
    HarfangHighLevel.DrawBox
    HarfangHighLevel.DrawBoxM
-   HarfangHighLevel.DrawPlane
-   HarfangHighLevel.DrawGeo
-   HarfangHighLevel.DrawQuad3D
-   HarfangHighLevel.DrawQuad3DV
-   HarfangHighLevel.DrawQuad2D
-   HarfangHighLevel.DrawText2D
-   HarfangHighLevel.DrawText
-   HarfangHighLevel.DrawTextM
-   HarfangHighLevel.DrawLine
-   HarfangHighLevel.DrawLineV
-   HarfangHighLevel.DrawLineList
    HarfangHighLevel.DrawCross
    HarfangHighLevel.DrawCrossV
-   HarfangHighLevel.ReturnTrueEveryXSec
-   HarfangHighLevel.GetDTSec
-   HarfangHighLevel.SetCamSpeed
+   HarfangHighLevel.DrawGeo
+   HarfangHighLevel.DrawLine
+   HarfangHighLevel.DrawLineList
+   HarfangHighLevel.DrawLineV
+   HarfangHighLevel.DrawPlane
+   HarfangHighLevel.DrawQuad2D
+   HarfangHighLevel.DrawQuad3D
+   HarfangHighLevel.DrawQuad3DV
+   HarfangHighLevel.DrawText
+   HarfangHighLevel.DrawText2D
+   HarfangHighLevel.DrawTextM
+   HarfangHighLevel.Flush2D
+   HarfangHighLevel.Flush3D
    HarfangHighLevel.GetCamSpeed
-   HarfangHighLevel.DestroyNode
-   HarfangHighLevel.__update_physic_mat__
+   HarfangHighLevel.GetCameraMat4
+   HarfangHighLevel.GetDTSec
+   HarfangHighLevel.GetVRControllersMat
+   HarfangHighLevel.Init
+   HarfangHighLevel.KeyDown
+   HarfangHighLevel.KeyPressed
+   HarfangHighLevel.LoadScene
+   HarfangHighLevel.NodeAddForce
+   HarfangHighLevel.NodeAddImpulse
+   HarfangHighLevel.PlaySound
    HarfangHighLevel.ResetWorldAndForce
-   HarfangHighLevel.ResetWorldAndForceV
    HarfangHighLevel.ResetWorldAndForceM
+   HarfangHighLevel.ResetWorldAndForceV
+   HarfangHighLevel.ReturnTrueEveryXSec
+   HarfangHighLevel.SetCamSpeed
+   HarfangHighLevel.SetDiffuseTexture
+   HarfangHighLevel.SetMat4
+   HarfangHighLevel.SetParent
    HarfangHighLevel.SetPosition
    HarfangHighLevel.SetPositionV
    HarfangHighLevel.SetRotation
    HarfangHighLevel.SetRotationV
    HarfangHighLevel.SetScale
    HarfangHighLevel.SetScaleV
-   HarfangHighLevel.SetMat4
-   HarfangHighLevel.SetDiffuseTexture
-   HarfangHighLevel.KeyPressed
-   HarfangHighLevel.KeyDown
-   HarfangHighLevel.GetCameraMat4
-   HarfangHighLevel.NodeAddImpulse
-   HarfangHighLevel.NodeAddForce
-   HarfangHighLevel.SetParent
    HarfangHighLevel.SetVRGroundAnchor
    HarfangHighLevel.SetVRGroundAnchorV
-   HarfangHighLevel.GetVRControllersMat
    HarfangHighLevel.Uninit
-   HarfangHighLevel.PlaySound
+   HarfangHighLevel.UpdateDraw
+   HarfangHighLevel.__update_physic_mat__
+   HarfangHighLevel.execute_assetc
+   HarfangHighLevel.getColoredMaterial
 
 
 
@@ -108,10 +109,11 @@ Attributes
 .. autoapisummary::
 
    HarfangHighLevel.current_folder_path
-   HarfangHighLevel.render_type
+   HarfangHighLevel.current_platform
    HarfangHighLevel.gVal
-   HarfangHighLevel.output_assets_path
    HarfangHighLevel.output_assets_compiled_path
+   HarfangHighLevel.output_assets_path
+   HarfangHighLevel.render_type
    HarfangHighLevel.text_render_state
 
 
@@ -120,45 +122,45 @@ Attributes
 
    
 
+.. py:data:: current_platform
+   
+
+   
+
+.. py:data:: gVal
+   
+
+   
+
+.. py:data:: output_assets_compiled_path
+   
+
+   
+
+.. py:data:: output_assets_path
+   
+
+   
+
 .. py:data:: render_type
-   :annotation: = VK
+   :annotation: = DX11
+
+   
+
+.. py:data:: text_render_state
+   
 
    
 
 .. py:class:: GlobalVal
 
-   .. py:attribute:: width
-      :annotation: :int = 128
+   .. py:attribute:: CacheTexturePathToUniformTargetTex
+      :annotation: :Dict[str, harfang.UniformSetTexture]
 
       
 
-   .. py:attribute:: height
-      :annotation: :int = 128
-
+   .. py:attribute:: EventNameElapsedSec
       
-
-   .. py:attribute:: win
-      :annotation: :int
-
-      
-
-   .. py:attribute:: pipeline
-      :annotation: :harfang.ForwardPipelineAAA
-
-      
-
-   .. py:attribute:: res
-      :annotation: :harfang.PipelineResources
-
-      
-
-   .. py:attribute:: render_data
-      :annotation: :harfang.SceneForwardPipelineRenderData
-
-      
-
-   .. py:attribute:: pass_views
-      :annotation: :List[harfang.SceneForwardPipelinePassViewId] = []
 
       
 
@@ -167,13 +169,138 @@ Attributes
 
       
 
-   .. py:attribute:: vr_controllers
-      :annotation: :Dict[str, harfang.VRController]
+   .. py:attribute:: cam_speed
+      :annotation: :float = 1.0
+
+      
+
+   .. py:attribute:: camera
+      :annotation: :harfang.Node
+
+      
+
+   .. py:attribute:: clocks
+      :annotation: :harfang.SceneClocks
+
+      
+
+   .. py:attribute:: debug_physics
+      :annotation: :bool = False
+
+      
+
+   .. py:attribute:: dt
+      :annotation: :int
+
+      
+
+   .. py:attribute:: font
+      :annotation: :harfang.Font
 
       
 
    .. py:attribute:: ground_vr_mat
       :annotation: :harfang.Mat4
+
+      
+
+   .. py:attribute:: height
+      :annotation: :int = 128
+
+      
+
+   .. py:attribute:: keyboard
+      :annotation: :harfang.Keyboard
+
+      
+
+   .. py:attribute:: lines_3D
+      :annotation: :List[Dict[str, Any]] = []
+
+      
+
+   .. py:attribute:: materials
+      :annotation: :Dict[str, harfang.Material]
+
+      
+
+   .. py:attribute:: model_refs
+      :annotation: :Dict[str, harfang.ModelRef]
+
+      
+
+   .. py:attribute:: models
+      :annotation: :Dict[str, harfang.Model]
+
+      
+
+   .. py:attribute:: models_3D
+      :annotation: :List[Dict[str, Any]] = []
+
+      
+
+   .. py:attribute:: mouse
+      :annotation: :harfang.Mouse
+
+      
+
+   .. py:attribute:: objects_2D
+      :annotation: :List[Dict[str, Any]] = []
+
+      
+
+   .. py:attribute:: pass_views
+      :annotation: :List[harfang.SceneForwardPipelinePassViewId] = []
+
+      
+
+   .. py:attribute:: physics
+      
+
+      
+
+   .. py:attribute:: pipeline
+      :annotation: :harfang.ForwardPipelineAAA
+
+      
+
+   .. py:attribute:: quads_3D
+      :annotation: :List[Dict[str, Any]] = []
+
+      
+
+   .. py:attribute:: render_data
+      :annotation: :harfang.SceneForwardPipelineRenderData
+
+      
+
+   .. py:attribute:: res
+      :annotation: :harfang.PipelineResources
+
+      
+
+   .. py:attribute:: scene
+      :annotation: :harfang.Scene
+
+      
+
+   .. py:attribute:: shaders
+      :annotation: :Dict[str, Union[harfang.PipelineProgram, harfang.PipelineProgramRef]]
+
+      
+
+   .. py:attribute:: texts_3D
+      :annotation: :List[Dict[str, Any]] = []
+
+      
+
+   .. py:attribute:: update_fps_controller
+      :annotation: :bool = False
+
+      
+
+   .. py:attribute:: vr_controllers
+      :annotation: :Dict[str, harfang.VRController]
 
       
 
@@ -197,169 +324,20 @@ Attributes
 
       
 
-   .. py:attribute:: materials
-      :annotation: :Dict[str, harfang.Material]
+   .. py:attribute:: width
+      :annotation: :int = 128
 
       
 
-   .. py:attribute:: models
-      :annotation: :Dict[str, harfang.Model]
-
-      
-
-   .. py:attribute:: model_refs
-      :annotation: :Dict[str, harfang.ModelRef]
-
-      
-
-   .. py:attribute:: shaders
-      :annotation: :Dict[str, Union[harfang.PipelineProgram, harfang.PipelineProgramRef]]
-
-      
-
-   .. py:attribute:: CacheTexturePathToUniformTargetTex
-      :annotation: :Dict[str, harfang.UniformSetTexture]
-
-      
-
-   .. py:attribute:: dt
+   .. py:attribute:: win
       :annotation: :int
 
       
 
-   .. py:attribute:: clocks
-      :annotation: :harfang.SceneClocks
 
-      
+.. py:function:: Add3DFile(file_path: str, override: bool = False, make_physics_object: bool = False, physic_type=hl.RBT_Static, collision_type=hl.CT_Mesh, physic_mass=0, friction=0.5, rolling_friction=0, make_pathfinding: bool = False) -> harfang.Node
 
-   .. py:attribute:: scene
-      :annotation: :harfang.Scene
-
-      
-
-   .. py:attribute:: camera
-      :annotation: :harfang.Node
-
-      
-
-   .. py:attribute:: update_fps_controller
-      :annotation: :bool = False
-
-      
-
-   .. py:attribute:: cam_speed
-      :annotation: :float = 1.0
-
-      
-
-   .. py:attribute:: physics
-      
-
-      
-
-   .. py:attribute:: debug_physics
-      :annotation: :bool = False
-
-      
-
-   .. py:attribute:: models_3D
-      :annotation: :List[Dict[str, Any]] = []
-
-      
-
-   .. py:attribute:: texts_3D
-      :annotation: :List[Dict[str, Any]] = []
-
-      
-
-   .. py:attribute:: lines_3D
-      :annotation: :List[Dict[str, Any]] = []
-
-      
-
-   .. py:attribute:: quads_3D
-      :annotation: :List[Dict[str, Any]] = []
-
-      
-
-   .. py:attribute:: objects_2D
-      :annotation: :List[Dict[str, Any]] = []
-
-      
-
-   .. py:attribute:: font
-      :annotation: :harfang.Font
-
-      
-
-   .. py:attribute:: mouse
-      :annotation: :harfang.Mouse
-
-      
-
-   .. py:attribute:: keyboard
-      :annotation: :harfang.Keyboard
-
-      
-
-   .. py:attribute:: EventNameElapsedSec
-      
-
-      
-
-
-.. py:data:: gVal
-   
-
-   
-
-.. py:data:: output_assets_path
-   
-
-   
-
-.. py:data:: output_assets_compiled_path
-   
-
-   
-
-.. py:data:: text_render_state
-   
-
-   
-
-.. py:function:: Init(width: int, height: int, activate_vr: bool = False)
-
-
-.. py:function:: execute_assetc(input_path: str, output_path: str)
-
-
-.. py:function:: getColoredMaterial(color: harfang.Color)
-
-   Creates a material using the chosen color. Returns *harfang.Material* object. Material is cached, meaning that if you create 2 material objects of the same color, modifying one of them will modify the other one as well.
-
-
-.. py:function:: AddFpsCamera(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0)
-
-   Creates a fps controller state (uses scene main camera).
-
-
-.. py:function:: AddFpsCameraV(p: harfang.Vec3, r: harfang.Vec3)
-
-
-.. py:function:: AddPointLight(x: float, y: float, z: float, color: harfang.Color = hl.Color.White, shadow: bool = True) -> harfang.Node
-
-   Initialize a PointLight Node in the scene. Returns *harfang.Node* object.
-
-
-.. py:function:: AddSpotLight(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: harfang.Color = hl.Color.White, shadow: bool = True) -> harfang.Node
-
-   Initialize a SpotLight Node in the scene. Returns *harfang.Node* object.
-
-
-.. py:function:: AddLinearLight(angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: harfang.Color = hl.Color.White, shadow: bool = True) -> harfang.Node
-
-   Initialize a LinearLight Node in the scene. Returns *harfang.Node* object.
+   Creates a new instance of a 3d object by giving the path to the .fbx or .gltf model. Returns *harfang.Node* object.
 
 
 .. py:function:: AddBox(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1, color: harfang.Color = hl.Color.White) -> harfang.Node
@@ -370,20 +348,43 @@ Attributes
 .. py:function:: AddBoxM(m: harfang.Mat4, size_x: float = 1, size_y: float = 1, size_z: float = 1, color: harfang.Color = hl.Color.White) -> harfang.Node
 
 
+.. py:function:: AddCapsule(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: harfang.Color = hl.Color.White) -> harfang.Node
+
+   Initialize a 3d capsule node in the scene. Returns *harfang.Node* object.
+
+
+.. py:function:: AddCone(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: harfang.Color = hl.Color.White) -> harfang.Node
+
+   Initialize a 3d cone node in the scene. Returns *harfang.Node* object.
+
+
+.. py:function:: AddCylinder(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: harfang.Color = hl.Color.White) -> harfang.Node
+
+   Iinitialize a 3d cylinder node in the scene. Returns *harfang.Node* object.
+
+
+.. py:function:: AddFpsCamera(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0)
+
+   Creates a fps controller state (uses scene main camera).
+
+
+.. py:function:: AddFpsCameraV(p: harfang.Vec3, r: harfang.Vec3)
+
+
+.. py:function:: AddGeo(geo_path: str, x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: harfang.Color = hl.Color.White) -> harfang.Node
+
+
+.. py:function:: AddLinearLight(angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: harfang.Color = hl.Color.White, shadow: bool = True) -> harfang.Node
+
+   Initialize a LinearLight Node in the scene. Returns *harfang.Node* object.
+
+
 .. py:function:: AddPhysicBox(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1, mass: float = 0, friction=0.5, rolling_friction=0.0, restitution=0.0, is_kinematic: bool = False, is_trigger: bool = False, color: harfang.Color = hl.Color.White) -> harfang.Node
 
    Initialize a 3d physic box node in the scene. Returns *harfang.Node* object.
 
 
 .. py:function:: AddPhysicBoxM(m: harfang.Mat4, size_x: float = 1, size_y: float = 1, size_z: float = 1, mass: float = 0, friction=0.5, rolling_friction=0.0, restitution=0.0, is_kinematic: bool = False, is_trigger: bool = False, color: harfang.Color = hl.Color.White) -> harfang.Node
-
-
-.. py:function:: AddSphere(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, color: harfang.Color = hl.Color.White) -> harfang.Node
-
-   Initialize a 3d sphere node in the scene. Returns *harfang.Node* object.
-
-
-.. py:function:: AddSphereM(m: harfang.Mat4, radius: float = 1, color: harfang.Color = hl.Color.White) -> harfang.Node
 
 
 .. py:function:: AddPhysicSphere(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, mass: float = 0, friction=0.5, rolling_friction=0.0, restitution=0.0, is_kinematic: bool = False, is_trigger: bool = False, color: harfang.Color = hl.Color.White) -> harfang.Node
@@ -402,38 +403,27 @@ Attributes
 .. py:function:: AddPlaneM(m: harfang.Mat4, size_x: float = 1, size_y: float = 1, color: harfang.Color = hl.Color.White) -> harfang.Node
 
 
-.. py:function:: AddCylinder(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: harfang.Color = hl.Color.White) -> harfang.Node
+.. py:function:: AddPointLight(x: float, y: float, z: float, color: harfang.Color = hl.Color.White, shadow: bool = True) -> harfang.Node
 
-   Iinitialize a 3d cylinder node in the scene. Returns *harfang.Node* object.
-
-
-.. py:function:: AddCone(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: harfang.Color = hl.Color.White) -> harfang.Node
-
-   Initialize a 3d cone node in the scene. Returns *harfang.Node* object.
+   Initialize a PointLight Node in the scene. Returns *harfang.Node* object.
 
 
-.. py:function:: AddCapsule(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, height: float = 2, color: harfang.Color = hl.Color.White) -> harfang.Node
+.. py:function:: AddSphere(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, radius: float = 1, color: harfang.Color = hl.Color.White) -> harfang.Node
 
-   Initialize a 3d capsule node in the scene. Returns *harfang.Node* object.
-
-
-.. py:function:: LoadScene(scn_path: str)
-
-   Creates a new instance of a 3d object such as a scene or an asset. Returns *harfang.Node*, *bool* object.
+   Initialize a 3d sphere node in the scene. Returns *harfang.Node* object.
 
 
-.. py:function:: Add3DFile(file_path: str, override: bool = False, make_physics_object: bool = False, physic_type=hl.RBT_Static, collision_type=hl.CT_Mesh, physic_mass=0, friction=0.5, rolling_friction=0, make_pathfinding: bool = False) -> harfang.Node
-
-   Creates a new instance of a 3d object by giving the path to the .fbx or .gltf model. Returns *harfang.Node* object.
+.. py:function:: AddSphereM(m: harfang.Mat4, radius: float = 1, color: harfang.Color = hl.Color.White) -> harfang.Node
 
 
-.. py:function:: Flush3D()
+.. py:function:: AddSpotLight(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, color: harfang.Color = hl.Color.White, shadow: bool = True) -> harfang.Node
+
+   Initialize a SpotLight Node in the scene. Returns *harfang.Node* object.
 
 
-.. py:function:: Flush2D(view_id)
+.. py:function:: DestroyNode(node: harfang.Node)
 
-
-.. py:function:: UpdateDraw()
+   Destroys a node from the scene.
 
 
 .. py:function:: DrawBox(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1)
@@ -444,14 +434,38 @@ Attributes
 .. py:function:: DrawBoxM(m: harfang.Mat4, size: harfang.Vec3 = hl.Vec3(1, 1, 1))
 
 
+.. py:function:: DrawCross(x: float, y: float, z: float, color: harfang.Color = hl.Color.White, size: float = 0.5, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0)
+
+   Draws a 3d Cross.
+
+
+.. py:function:: DrawCrossV(pos: harfang.Vec3, color: harfang.Color = hl.Color.White, size: float = 0.5, rot: harfang.Vec3 = hl.Vec3(0, 0, 0))
+
+
+.. py:function:: DrawGeo(geo: harfang.Model, x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1)
+
+   Draws a 3d geometry.
+
+
+.. py:function:: DrawLine(a_x: float, a_y: float, a_z: float, b_x: float, b_y: float, b_z: float, color: harfang.Color = hl.Color.White, color2: harfang.Color = hl.Color.White)
+
+   Draws a 3d line.
+
+
+.. py:function:: DrawLineList(points, colors)
+
+
+.. py:function:: DrawLineV(a: harfang.Vec3, b: harfang.Vec3, color: harfang.Color = hl.Color.White, color2: harfang.Color = hl.Color.White)
+
+
 .. py:function:: DrawPlane(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_z: float = 1)
 
    Draws a 3d plane.
 
 
-.. py:function:: DrawGeo(geo, x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size_x: float = 1, size_y: float = 1, size_z: float = 1)
+.. py:function:: DrawQuad2D(pos_in_pixel_x: float, pos_in_pixel_y: float, width: int, height: int, tex_path: str = None, color: harfang.Color = hl.Color.White, render_state: harfang.RenderState = hl.ComputeRenderState(hl.BM_Alpha, hl.DT_Disabled), depth: float = 0, show_in_vr: bool = True)
 
-   Draws a 3d geometry.
+   Draws a 2d quad.
 
 
 .. py:function:: DrawQuad3D(a_x, a_y, a_z, b_x, b_y, b_z, c_x, c_y, c_z, d_x, d_y, d_z, uv_a=0, uv_b=0, uv_c=1, uv_d=1, tex_path: str = None, color_a: harfang.Color = hl.Color.White, color_b: harfang.Color = hl.Color.White, color_c: harfang.Color = hl.Color.White, color_d: harfang.Color = hl.Color.White)
@@ -462,9 +476,9 @@ Attributes
 .. py:function:: DrawQuad3DV(a, b, c, d, uv_a=0, uv_b=0, uv_c=1, uv_d=1, tex_path: str = None, color_a: harfang.Color = hl.Color.White, color_b: harfang.Color = hl.Color.White, color_c: harfang.Color = hl.Color.White, color_d: harfang.Color = hl.Color.White)
 
 
-.. py:function:: DrawQuad2D(pos_in_pixel_x: float, pos_in_pixel_y: float, width: int, height: int, tex_path: str = None, color: harfang.Color = hl.Color.White, render_state: harfang.RenderState = hl.ComputeRenderState(hl.BM_Alpha, hl.DT_Disabled), depth: float = 0, show_in_vr: bool = True)
+.. py:function:: DrawText(text: str, x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size: float = 0.01, color: harfang.Color = hl.Color.Green, text_centered: bool = False, font_: harfang.Font = None, is_2d: bool = False)
 
-   Draws a 2d quad.
+   Draws 3d text.
 
 
 .. py:function:: DrawText2D(text: str, pos_in_pixel_x: float, pos_in_pixel_y: float, size: float = 1.0, color: harfang.Color = hl.Color.Green, text_centered: bool = False, font_: harfang.Font = None, depth: float = 1)
@@ -472,46 +486,13 @@ Attributes
    Draws 2d text on screen (requires loading a font).
 
 
-.. py:function:: DrawText(text: str, x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0, size: float = 0.01, color: harfang.Color = hl.Color.Green, text_centered: bool = False, font_: harfang.Font = None, is_2d: bool = False)
-
-   Draws 3d text.
-
-
 .. py:function:: DrawTextM(text: str, mat: harfang.Mat4, size: float = 0.01, color: harfang.Color = hl.Color.Green, text_centered: bool = False, font_: harfang.Font = None, is_2d: bool = False, depth: float = 1)
 
 
-.. py:function:: DrawLine(a_x: float, a_y: float, a_z: float, b_x: float, b_y: float, b_z: float, color: harfang.Color = hl.Color.White, color2: harfang.Color = hl.Color.White)
-
-   Draws a 3d line.
+.. py:function:: Flush2D(view_id)
 
 
-.. py:function:: DrawLineV(a: harfang.Vec3, b: harfang.Vec3, color: harfang.Color = hl.Color.White, color2: harfang.Color = hl.Color.White)
-
-
-.. py:function:: DrawLineList(points, colors)
-
-
-.. py:function:: DrawCross(x: float, y: float, z: float, color: harfang.Color = hl.Color.White, size: float = 0.5, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0)
-
-   Draws a 3d Cross.
-
-
-.. py:function:: DrawCrossV(pos: harfang.Vec3, color: harfang.Color = hl.Color.White, size: float = 0.5, rot: harfang.Vec3 = hl.Vec3(0, 0, 0))
-
-
-.. py:function:: ReturnTrueEveryXSec(sec: float, name_event: str)
-
-   Draws a 3d Cross. Returns a *boolean*.
-
-
-.. py:function:: GetDTSec()
-
-   Returns delta-time value in *float*.
-
-
-.. py:function:: SetCamSpeed(v)
-
-   Set camera velocity.
+.. py:function:: Flush3D()
 
 
 .. py:function:: GetCamSpeed()
@@ -519,23 +500,86 @@ Attributes
    Get camera velocity. Returns an *int*
 
 
-.. py:function:: DestroyNode(node: harfang.Node)
+.. py:function:: GetCameraMat4()
 
-   Destroys a node from the scene.
+   Get camera matrix 4. Returns *harfang.Mat4*.
 
 
-.. py:function:: __update_physic_mat__(node: harfang.Node)
+.. py:function:: GetDTSec()
 
-   Updates node physic rigidbody.
+   Returns delta-time value in *float*.
+
+
+.. py:function:: GetVRControllersMat()
+
+   Get VR Controllers Matrix. Returns *harfang.Mat4*.
+
+
+.. py:function:: Init(width: int, height: int, activate_vr: bool = False)
+
+
+.. py:function:: KeyDown(key: int)
+
+   Key down event, returns a *boolean*.
+
+
+.. py:function:: KeyPressed(key: int)
+
+   Key pressed event, returns a *boolean*.
+
+
+.. py:function:: LoadScene(scn_path: str)
+
+   Creates a new instance of a 3d object such as a scene or an asset. Returns *harfang.Node*, *bool* object.
+
+
+.. py:function:: NodeAddForce(node: harfang.Node, F: harfang.Vec3, world_pos: harfang.Vec3 = None)
+
+   Adds force to a physic node.
+
+
+.. py:function:: NodeAddImpulse(node: harfang.Node, dt_velocity: harfang.Vec3, world_pos: harfang.Vec3 = None)
+
+   Adds a physic impulse to a node.
+
+
+.. py:function:: PlaySound(file_path: str, repeat: bool = False, volume: float = 1, mat: harfang.Mat4 = None)
+
+   Plays a sound.
 
 
 .. py:function:: ResetWorldAndForce(node: harfang.Node, x: float = 0, y: float = 0, z: float = 0, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0)
 
 
+.. py:function:: ResetWorldAndForceM(node: harfang.Node, v: harfang.Mat4)
+
+
 .. py:function:: ResetWorldAndForceV(node: harfang.Node, p: harfang.Vec3, r: harfang.Vec3)
 
 
-.. py:function:: ResetWorldAndForceM(node: harfang.Node, v: harfang.Mat4)
+.. py:function:: ReturnTrueEveryXSec(sec: float, name_event: str)
+
+   Draws a 3d Cross. Returns a *boolean*.
+
+
+.. py:function:: SetCamSpeed(v)
+
+   Set camera velocity.
+
+
+.. py:function:: SetDiffuseTexture(node: harfang.Node, texture_path: str)
+
+   Set the diffuse texture of a node.
+
+
+.. py:function:: SetMat4(node: harfang.Node, m: harfang.Mat4)
+
+   Set the matrix of a node.
+
+
+.. py:function:: SetParent(node: harfang.Node, parentNode: harfang.Node)
+
+   Adds a parent node to a node.
 
 
 .. py:function:: SetPosition(node: harfang.Node, x: float = 0, y: float = 0, z: float = 0)
@@ -562,46 +606,6 @@ Attributes
 .. py:function:: SetScaleV(node: harfang.Node, v: harfang.Vec3)
 
 
-.. py:function:: SetMat4(node: harfang.Node, m: harfang.Mat4)
-
-   Set the matrix of a node.
-
-
-.. py:function:: SetDiffuseTexture(node: harfang.Node, texture_path: str)
-
-   Set the diffuse texture of a node.
-
-
-.. py:function:: KeyPressed(key: int)
-
-   Key pressed event, returns a *boolean*.
-
-
-.. py:function:: KeyDown(key: int)
-
-   Key down event, returns a *boolean*.
-
-
-.. py:function:: GetCameraMat4()
-
-   Get camera matrix 4. Returns *harfang.Mat4*.
-
-
-.. py:function:: NodeAddImpulse(node: harfang.Node, dt_velocity: harfang.Vec3, world_pos: harfang.Vec3 = None)
-
-   Adds a physic impulse to a node.
-
-
-.. py:function:: NodeAddForce(node: harfang.Node, F: harfang.Vec3, world_pos: harfang.Vec3 = None)
-
-   Adds force to a physic node.
-
-
-.. py:function:: SetParent(node: harfang.Node, parentNode: harfang.Node)
-
-   Adds a parent node to a node.
-
-
 .. py:function:: SetVRGroundAnchor(x: float, y: float, z: float, angle_x: float = 0, angle_y: float = 0, angle_z: float = 0)
 
    Sets the VR Ground Anchor.
@@ -610,18 +614,24 @@ Attributes
 .. py:function:: SetVRGroundAnchorV(p: harfang.Vec3, r: harfang.Vec3)
 
 
-.. py:function:: GetVRControllersMat()
-
-   Get VR Controllers Matrix. Returns *harfang.Mat4*.
-
-
 .. py:function:: Uninit()
 
    Uninit Harfang High Level, destroys scene and window.
 
 
-.. py:function:: PlaySound(file_path: str, repeat: bool = False, volume: float = 1, mat: harfang.Mat4 = None)
+.. py:function:: UpdateDraw()
 
-   Plays a sound.
+
+.. py:function:: __update_physic_mat__(node: harfang.Node)
+
+   Updates node physic rigidbody.
+
+
+.. py:function:: execute_assetc(input_path: str, output_path: str)
+
+
+.. py:function:: getColoredMaterial(color: harfang.Color)
+
+   Creates a material using the chosen color. Returns *harfang.Material* object. Material is cached, meaning that if you create 2 material objects of the same color, modifying one of them will modify the other one as well.
 
 
