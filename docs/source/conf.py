@@ -28,8 +28,10 @@ author = "Clem"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ["sphinx_rtd_theme", "autoapi.extension"]
-
-autoapi_dirs = ["../../bdist_wheel/HarfangHighLevel"]
+autoapi_template_dir = '../templates'
+autoapi_type = 'python'
+autoapi_dirs = ["../../bdist_wheel/HarfangHighLevel/"]
+autoapi_member_order = "groupwise"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

@@ -35,16 +35,16 @@ Attributes
    HarfangHighLevel.LOD_Manager.LOD_nodes
 
 
+.. py:data:: LOD_nodes
+   :annotation: = []
+
+   
+
 .. py:class:: LOD_node
 
    .. py:method:: GetNode(self) -> HarfangHighLevel.Node
 
 
-
-.. py:data:: LOD_nodes
-   :annotation: = []
-
-   
 
 .. py:function:: CreateNodeWithLOD(name: str, lod_def, make_physics_object: bool = False, physic_type=hl.RBT_Static, collision_type=hl.CT_Mesh) -> LOD_node
 

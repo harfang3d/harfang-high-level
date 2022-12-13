@@ -8,6 +8,19 @@ HARFANG High Level for Python
 Harfang High Level is a set of functions designed for rapid prototyping 3D application in Python.
 It is based on the HARFANG 3D framework (https://www.harfang3d.com).
 
+Harfang High Level Documentation : https://harfang3d.github.io/harfang-high-level/
+
+| 
+| **Documentation**
+
+Access `Harfang High Level Documentation <https://harfang3d.github.io/harfang-high-level/>`_
+
+| 
+| **Installation**
+
+1. Get `Python 3 <https://www.python.org/downloads/>`_
+2. Run *pip install HarfangHighLevel* in your command-line tool
+
 | 
 | **Screenshots and use cases**
 
